@@ -1,4 +1,6 @@
-# project_app_employee
+# employee-profile-app
+
+### Application Structure
 
 ```
 employee-profile-app/
