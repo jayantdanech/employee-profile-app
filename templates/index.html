@@ -1,23 +1,22 @@
 <html>
-<head>
-    <title>Employee Entry</title>
-</head>
+<head><title>Main Page</title></head>
 <body>
-    <h2>Employee Information Form</h2>
+<h2>Employee Input Form</h2>
 
-    <form action="/submit" method="POST" enctype="multipart/form-data">
-        Name: <input type="text" name="name"><br><br>
-        Location: <input type="text" name="location"><br><br>
-        Age: <input type="number" name="age"><br><br>
-        Technology: <input type="text" name="technology"><br><br>
-        Salary: <input type="number" name="salary"><br><br>
+<form action="/submit" method="POST" enctype="multipart/form-data">
+    Name: <input type="text" name="name"><br><br>
+    Location: <input type="text" name="location"><br><br>
+    Age: <input type="number" name="age"><br><br>
+    Technology: <input type="text" name="technology"><br><br>
+    Salary: <input type="number" name="salary"><br><br>
 
-        Upload Photo: <input type="file" name="photo"><br><br>
+    Upload Photo: <input type="file" name="photo"><br><br>
 
-        <input type="submit" value="Submit">
-    </form>
+    <button type="submit">Submit</button>
+</form>
 
-    <hr>
-    <a href="/employee">Get Employee Information</a>
+<br>
+<a href="/about">About Us</a> | 
+<a href="/employee">Lookup Employee</a>
 </body>
 </html>
