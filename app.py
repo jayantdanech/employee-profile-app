@@ -85,19 +85,35 @@ def employee_lookup_page():
 
 @app.route("/get_employee", methods=["POST"])
 def get_employee():
-    emp_id = request.form["emp_id"]
+    emp_id = request.form.get("emp_id")
+    name = request.form.get("name")
+
+    if not emp_id and not name:
+        return jsonify({"error": "Please enter Employee ID or Name"})
 
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM employees WHERE id=%s", (emp_id,))
-            result = cur.fetchone()
+            
+            # Priority 1: Search by ID
+            if emp_id:
+                cur.execute("SELECT * FROM employees WHERE id=%s", (emp_id,))
+                result = cur.fetchone()
+                if result:
+                    conn.close()
+                    return jsonify(result)
+
+            # Priority 2: Search by Name
+            if name:
+                cur.execute("SELECT * FROM employees WHERE name LIKE %s", (f"%{name}%",))
+                result = cur.fetchall()  # return list (multiple names possible)
+                conn.close()
+                return jsonify(result if result else {"error": "No matching employee found"})
+
         conn.close()
+
     except Exception as e:
         return jsonify({"error": f"DB Error: {e}"})
-
-    return jsonify(result if result else {"error": "Employee Not Found"})
-
 
 @app.route("/health")
 def health():
