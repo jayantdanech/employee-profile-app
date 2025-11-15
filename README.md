@@ -1,5 +1,5 @@
 # employee-profile-app
-AWS
+LOCAL 
 ### Application Structure
 
 ```
