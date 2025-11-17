@@ -3,7 +3,7 @@ import pymysql, uuid, os
 from datetime import datetime
 
 # --------------------------------------------
-# Detect AWS Mode or Local Mode
+# Local Dev Mode — No AWS
 # --------------------------------------------
 LOCAL_DEV = True
 print("### LOCAL DEV MODE ENABLED — AWS SERVICES DISABLED ###")
@@ -11,7 +11,7 @@ print("### LOCAL DEV MODE ENABLED — AWS SERVICES DISABLED ###")
 app = Flask(__name__)
 
 # --------------------------------------------
-# Environment Variables
+# Environment Variables (Defaults for Local)
 # --------------------------------------------
 DB_HOST = os.environ.get("DB_HOST", "mysql")
 DB_USER = os.environ.get("DB_USER", "appuser")
@@ -27,10 +27,9 @@ def get_db_conn():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-
-# ======================================================
-# PAGE 1 — MAIN PAGE (Employee Input)
-# ======================================================
+# --------------------------------------------
+# PAGE 1 — Main Page (Employee Input)
+# --------------------------------------------
 @app.route("/")
 def main_page():
     return render_template("index.html")
@@ -45,37 +44,13 @@ def submit():
     salary = request.form["salary"]
     photo = request.files["photo"]
 
-    # Generate unique file name
     image_id = str(uuid.uuid4())
     file_name = f"{image_id}_{photo.filename}"
 
-    # -----------------------------------------------------
-    # AWS MODE — Upload Photo to S3 + Store metadata DynamoDB
-    # -----------------------------------------------------
-    if not LOCAL_DEV:
+    # Skip AWS (Dev Mode)
+    print("LOCAL DEV: Uploaded file simulated:", file_name)
 
-        # Upload image to S3
-        s3 = boto3.client("s3", region_name=AWS_REGION)
-        s3.upload_fileobj(photo, UPLOADS_BUCKET, file_name)
-
-        # Metadata → DynamoDB
-        dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-        table = dynamodb.Table("employee_photos")
-
-        table.put_item(Item={
-            "image_id": image_id,
-            "file_name": file_name,
-            "uploaded_at": str(datetime.utcnow())
-        })
-
-        print(f"Uploaded file to S3 and metadata to DynamoDB: {file_name}")
-
-    else:
-        print("LOCAL DEV: Simulated upload:", file_name)
-
-    # -----------------------------------------------------
-    # INSERT EMPLOYEE RECORD INTO RDS
-    # -----------------------------------------------------
+    # Insert into MySQL
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
@@ -86,28 +61,23 @@ def submit():
         conn.commit()
         conn.close()
         print("DB Insert Successful")
-
     except Exception as e:
         print("DB Insert Error:", e)
 
     return redirect(url_for("main_page"))
 
 
-# ======================================================
-# PAGE 2 — ABOUT US PAGE
-# From Architecture: Page served from S3 (static hosting)
-# App only redirects or shows a button
-# ======================================================
+# --------------------------------------------
+# PAGE 2 — About Us Page (Simulating S3)
+# --------------------------------------------
 @app.route("/about")
 def about():
-    # This is where your static S3 website URL goes
-    about_url = os.environ.get("ABOUT_US_URL", "#")
-    return render_template("about.html", s3_about_url=about_url)
+    return render_template("about.html")
 
 
-# ======================================================
-# PAGE 3 — EMPLOYEE LOOKUP (Employee ID)
-# ======================================================
+# --------------------------------------------
+# PAGE 3 — Employee Information Lookup
+# --------------------------------------------
 @app.route("/employee")
 def employee_lookup_page():
     return render_template("employee.html")
@@ -124,8 +94,8 @@ def get_employee():
     try:
         conn = get_db_conn()
         with conn.cursor() as cur:
-
-            # Priority 1 — Find by ID
+            
+            # Priority 1: Search by ID
             if emp_id:
                 cur.execute("SELECT * FROM employees WHERE id=%s", (emp_id,))
                 result = cur.fetchone()
@@ -133,29 +103,26 @@ def get_employee():
                     conn.close()
                     return jsonify(result)
 
-            # Priority 2 — Find by Name (search all possible matches)
+            # Priority 2: Search by Name
             if name:
                 cur.execute("SELECT * FROM employees WHERE name LIKE %s", (f"%{name}%",))
-                results = cur.fetchall()
+                result = cur.fetchall()  # return list (multiple names possible)
                 conn.close()
-                return jsonify(results if results else {"error": "No matching employee found"})
+                return jsonify(result if result else {"error": "No matching employee found"})
 
         conn.close()
+
     except Exception as e:
         return jsonify({"error": f"DB Error: {e}"})
 
-
-# ======================================================
-# HEALTH CHECK ENDPOINT
-# ======================================================
 @app.route("/health")
 def health():
     return "OK", 200
 
 
-# ======================================================
+# --------------------------------------------
 # START FLASK SERVER
-# ======================================================
+# --------------------------------------------
 if __name__ == "__main__":
     print("Starting Flask server on 0.0.0.0:5000 ...")
     app.run(host="0.0.0.0", port=5000)
