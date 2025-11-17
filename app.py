@@ -5,8 +5,13 @@ from datetime import datetime
 # --------------------------------------------
 # Detect AWS Mode or Local Mode
 # --------------------------------------------
-LOCAL_DEV = True
-print("### LOCAL DEV MODE ENABLED — AWS SERVICES DISABLED ###")
+LOCAL_DEV = os.environ.get("LOCAL_DEV", "false").lower() == "true"
+
+if LOCAL_DEV:
+    print("### LOCAL DEV MODE ENABLED — AWS SERVICES DISABLED ###")
+else:
+    print("### AWS MODE ENABLED — RDS / S3 / DYNAMODB ACTIVE ###")
+    import boto3
 
 app = Flask(__name__)
 
@@ -16,8 +21,15 @@ app = Flask(__name__)
 DB_HOST = os.environ.get("DB_HOST", "mysql")
 DB_USER = os.environ.get("DB_USER", "appuser")
 DB_PASS = os.environ.get("DB_PASS", "mypass")
-DB_NAME = "employee_db"
+DB_NAME = os.environ.get("DB_NAME", "employee_db")
 
+UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+
+
+# --------------------------------------------
+# MySQL DB Connection
+# --------------------------------------------
 def get_db_conn():
     return pymysql.connect(
         host=DB_HOST,
