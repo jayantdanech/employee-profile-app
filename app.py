@@ -72,7 +72,7 @@ def submit():
 
         # Metadata → DynamoDB
         dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-        table = dynamodb.Table("images")
+        table = dynamodb.Table("capstone_employee_images")
 
         table.put_item(Item={
             "image_id": image_id,
